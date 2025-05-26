@@ -1,0 +1,100 @@
+<% layout('layout') -%>
+
+<div class="art-deco-border">
+  <h2>Submit Your Query</h2>
+  <form id="queryForm">
+    <div class="form-group">
+      <label for="query">Enter your question for the AI models:</label>
+      <textarea id="query" name="query" rows="4" required></textarea>
+    </div>
+    <button type="submit">Compare Responses</button>
+  </form>
+</div>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <p>Generating responses from AI models...</p>
+</div>
+
+<div id="results"></div>
+
+<div class="query-history">
+  <h2>Your Recent Queries</h2>
+  <% if (queries.length > 0) { %>
+    <% queries.forEach(query => { %>
+      <div class="query-item" onclick="showQueryDetails('<%= query.id %>')">
+        <strong><%= query.query_text.substring(0, 100) %>...</strong>
+        <div style="font-size: 0.9rem; color: #7f8c8d; margin-top: 5px;">
+          <%= new Date(query.created_at).toLocaleDateString() %>
+        </div>
+      </div>
+    <% }) %>
+  <% } else { %>
+    <p>No queries yet. Submit your first query above!</p>
+  <% } %>
+</div>
+
+<script>
+document.getElementById('queryForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const query = document.getElementById('query').value;
+  const loading = document.getElementById('loading');
+  const results = document.getElementById('results');
+  
+  loading.classList.add('active');
+  results.innerHTML = '';
+  
+  try {
+    const response = await fetch('/query', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      results.innerHTML = `
+        <div class="response-card">
+          <h3>Gemini Response</h3>
+          <p>${data.responses.gemini}</p>
+        </div>
+        
+        <div class="response-card">
+          <h3>Llama Response</h3>
+          <p>${data.responses.llama}</p>
+        </div>
+        
+        <div class="response-card">
+          <h3>Deepseek Response</h3>
+          <p>${data.responses.deepseek}</p>
+        </div>
+        
+        <div class="comparison-section">
+          <h3>Semantic Comparison</h3>
+          <p>${data.comparison}</p>
+        </div>
+      `;
+      
+      // Reload page to show new query in history
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    } else {
+      results.innerHTML = '<div class="error-message">An error occurred. Please try again.</div>';
+    }
+  } catch (error) {
+    results.innerHTML = '<div class="error-message">An error occurred. Please try again.</div>';
+  } finally {
+    loading.classList.remove('active');
+  }
+});
+
+function showQueryDetails(queryId) {
+  // Implement query details view if needed
+  console.log('Show query details for ID:', queryId);
+}
+</script>

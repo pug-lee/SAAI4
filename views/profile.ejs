@@ -1,0 +1,42 @@
+<% layout('layout') -%>
+
+<div class="art-deco-border">
+  <h2>Update Your Profile</h2>
+  
+  <% if (error) { %>
+    <div class="error-message"><%= error %></div>
+  <% } %>
+  
+  <% if (success) { %>
+    <div class="success-message"><%= success %></div>
+  <% } %>
+  
+  <form method="POST" action="/profile">
+    <div class="form-group">
+      <label for="firstName">First Name</label>
+      <input type="text" id="firstName" name="firstName" value="<%= user.firstName %>" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="lastName">Last Name</label>
+      <input type="text" id="lastName" name="lastName" value="<%= user.lastName %>" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" value="<%= user.email %>" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="currentPassword">Current Password (required to save changes)</label>
+      <input type="password" id="currentPassword" name="currentPassword" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="newPassword">New Password (leave blank to keep current)</label>
+      <input type="password" id="newPassword" name="newPassword">
+    </div>
+    
+    <button type="submit">Update Profile</button>
+  </form>
+</div>

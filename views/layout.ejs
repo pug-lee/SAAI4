@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Comparison Platform</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <h1>AI Comparison Platform</h1>
+      <% if (user) { %>
+        <div class="welcome-message">Welcome, <%= user.firstName %>!</div>
+      <% } %>
+    </div>
+  </header>
+  
+  <nav>
+    <ul>
+      <% if (user) { %>
+        <li><a href="/">Home</a></li>
+        <li><a href="/profile">Profile</a></li>
+        <li><a href="/instructions">Instructions</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/roadmap">Roadmap</a></li>
+        <li><a href="/logout">Logout</a></li>
+      <% } else { %>
+        <li><a href="/login">Login</a></li>
+        <li><a href="/signup">Sign Up</a></li>
+        <li><a href="/instructions">Instructions</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/roadmap">Roadmap</a></li>
+      <% } %>
+    </ul>
+  </nav>
+  
+  <div class="container">
+    <%- body %>
+  </div>
+  
+  <footer>
+    <p>&copy; 2024 AI Comparison Platform - Powered by Art Deco Dreams</p>
+  </footer>
+</body>
+</html>
