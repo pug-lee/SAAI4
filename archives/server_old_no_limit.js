@@ -6,54 +6,12 @@ const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const axios = require('axios');
-const rateLimit = require('express-rate-limit');
-
-// Load environment variables FIRST
 require('dotenv').config();
 
-// Debug environment variables
-console.log('Environment variables loaded:', {
-  hasDatabaseUrl: !!process.env.DATABASE_URL,
-  nodeEnv: process.env.NODE_ENV
-});
-
-// Now load configs that depend on environment variables
-const dbConfig = require('./config/database');
-const openrouterConfig = require('./config/openrouter');
-const appConfig = require('./config/app');
+const dbConfig = require('../config/database');
+const openrouterConfig = require('../config/openrouter');
 
 const app = express();
-
-//generate new API_KEY for every call
-const proKey = openrouterConfig.proKey;
-async function generateApiKey() {
-    try {
-        const response = await axios.post(
-            'https://openrouter.ai/api/v1/keys',
-            {
-                name: `auto-key-${Date.now()}`,
-                limit: 0.0 // $1 credit limit
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${proKey}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-
-        //console.log('Generated API Key:', response.data.data);
-        //console.log('New new key:', response.data.key);
-        return response.data.key;
-        
-    } catch (error) {
-        console.error('Error generating API key:', error.response?.data || error.message);
-        return null;
-    }
-}
-
-let tempAPI_Key = generateApiKey();
-console.log('Init temp API_KEY:', tempAPI_Key);
 
 // PostgreSQL connection with proper SSL handling for Render
 const poolConfig = {
@@ -119,12 +77,12 @@ const createTables = async () => {
     
     // Add primary key constraint if it doesn't exist
     await pool.query(`
-      DO $$ 
+      DO $ 
       BEGIN 
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'session_pkey') THEN
           ALTER TABLE "user_sessions" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid");
         END IF;
-      END $$;
+      END $;
     `);
     
     // Create index if it doesn't exist
@@ -176,32 +134,10 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-// Middleware to pass user info and app config to views
+// Middleware to pass user info to views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
-  res.locals.appTitle = appConfig.title;
   next();
-});
-
-// Rate limiter for API queries
-const queryLimiter = rateLimit({
-  windowMs: appConfig.rateLimit.windowMs,
-  max: appConfig.rateLimit.maxRequests,
-  message: `Too many requests. Please wait ${appConfig.rateLimit.windowMs / 1000} seconds before making another query.`,
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: false,
-  keyGenerator: (req) => {
-    // Use session ID if logged in, otherwise use IP
-    return req.session?.userId || req.ip;
-  },
-  handler: (req, res) => {
-    res.status(429).json({
-      success: false,
-      error: `Too many requests. Please wait ${appConfig.rateLimit.windowMs / 1000} seconds before making another query.`,
-      retryAfter: Math.round(appConfig.rateLimit.windowMs / 1000)
-    });
-  }
 });
 
 // Routes
@@ -337,28 +273,15 @@ app.post('/profile', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/query', queryLimiter, async (req, res) => {
+app.post('/query', async (req, res) => {
   const { query } = req.body;
-
+  
   try {
-    // Check if API key exists
-    if (!tempAPI_Key) {
-      console.error('OpenRouter API key is missing!');
-      return res.status(500).json({ 
-        success: false, 
-        error: 'API configuration error. Please check your OpenRouter API key.' 
-      });
-    }
-
     // Call OpenRouter API for each model
     const models = ['gemini', 'llama', 'deepseek'];
     const responses = {};
     
     for (const model of models) {
-      console.log(`Calling ${model} model...`);
-      tempAPI_Key = await generateApiKey();
-      console.log('Gen new API_KEY:', tempAPI_Key);
-
       const response = await axios.post(
         openrouterConfig.baseURL,
         {
@@ -367,10 +290,8 @@ app.post('/query', queryLimiter, async (req, res) => {
         },
         {
           headers: {
-            'Authorization': `Bearer ${tempAPI_Key}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': openrouterConfig.headers['HTTP-Referer'],
-            'X-Title': openrouterConfig.headers['X-Title']
+            'Authorization': `Bearer ${openrouterConfig.apiKey}`,
+            'Content-Type': 'application/json'
           }
         }
       );
@@ -378,7 +299,7 @@ app.post('/query', queryLimiter, async (req, res) => {
       responses[model] = response.data.choices[0].message.content;
     }
     
-    // Compare responses using Gemma    
+    // Compare responses using Llama
     const comparisonPrompt = `Compare these three AI responses and highlight the key differences:
     
     Gemini: ${responses.gemini}
@@ -389,21 +310,16 @@ app.post('/query', queryLimiter, async (req, res) => {
     
     Please provide a semantic comparison highlighting the main differences in approach, content, and style.`;
     
-    console.log('Calling Gemma for comparison...');
-    tempAPI_Key = await generateApiKey();
-
     const comparisonResponse = await axios.post(
       openrouterConfig.baseURL,
       {
-        model: openrouterConfig.models.gemma,
+        model: openrouterConfig.models.llama,
         messages: [{ role: 'user', content: comparisonPrompt }]
       },
       {
         headers: {
-          'Authorization': `Bearer ${tempAPI_Key}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': openrouterConfig.headers['HTTP-Referer'],
-          'X-Title': openrouterConfig.headers['X-Title']
+          'Authorization': `Bearer ${openrouterConfig.apiKey}`,
+          'Content-Type': 'application/json'
         }
       }
     );
@@ -417,75 +333,17 @@ app.post('/query', queryLimiter, async (req, res) => {
         [req.session.userId, query, responses.gemini, responses.llama, responses.deepseek, comparison]
       );
     }
-    console.log('Sending results back to browser:');
+    
     res.json({
       success: true,
       responses,
       comparison
     });
-    console.log('done');
   } catch (error) {
-    console.error('API Error:', error.response?.data || error.message);
-    console.error('Full error:', error.response?.status, error.response?.statusText);
-    
-    // More detailed error handling
-    if (error.response?.status === 401) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Authentication failed. Please check your OpenRouter API key in the .env file.' 
-      });
-    }
-    
-    if (error.response?.status === 429) {
-      return res.status(429).json({ 
-        success: false, 
-        error: 'OpenRouter API rate limit exceeded. Please try again later.' 
-      });
-    }
-    
-    if (error.response?.status === 400) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Invalid request. The model name might be incorrect or the request format is invalid.' 
-      });
-    }
-    
-    res.status(500).json({ 
-      success: false, 
-      error: 'An error occurred while processing your request.' 
-    });
+    console.error(error);
+    res.json({ success: false, error: 'An error occurred' });
   }
 });
-
-app.get('/query/:id', async (req, res) => {
-  // Check if user is authenticated
-  console.log('Retrieving past queries ', req.session.userId);
-  if (!req.session.userId) {
-    return res.status(401).json({ success: false, error: 'Authentication required' });
-  }
-  
-  const queryId = req.params.id;
-  
-  try {
-    const result = await pool.query(
-      'SELECT * FROM queries WHERE id = $1 AND user_id = $2',
-      [queryId, req.session.userId]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Query not found' });
-    }
-    
-    res.json({
-      success: true,
-      query: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Error fetching query:', error);
-    res.status(500).json({ success: false, error: 'An error occurred' });
-  }
-});
-
 
 app.get('/instructions', (req, res) => {
   res.render('instructions');

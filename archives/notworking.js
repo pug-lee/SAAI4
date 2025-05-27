@@ -19,9 +19,9 @@ console.log('Environment variables loaded:', {
 });
 
 // Now load configs that depend on environment variables
-const dbConfig = require('./config/database');
-const openrouterConfig = require('./config/openrouter');
-const appConfig = require('./config/app');
+const dbConfig = require('../config/database');
+const openrouterConfig = require('../config/openrouter');
+const appConfig = require('../config/app');
 
 const app = express();
 

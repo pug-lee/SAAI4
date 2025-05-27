@@ -9,9 +9,9 @@ const axios = require('axios');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const dbConfig = require('./config/database');
-const openrouterConfig = require('./config/openrouter');
-const appConfig = require('./config/app');
+const dbConfig = require('../config/database');
+const openrouterConfig = require('../config/openrouter');
+const appConfig = require('../config/app');
 
 const app = express();
 

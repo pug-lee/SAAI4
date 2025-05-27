@@ -6,8 +6,8 @@ const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const axios = require('axios');
-const dbConfig = require('./config/database');
-const openrouterConfig = require('./config/openrouter');
+const dbConfig = require('../config/database');
+const openrouterConfig = require('../config/openrouter');
 
 const app = express();
 const pool = new Pool({ connectionString: dbConfig.connectionString, ssl: dbConfig.ssl });

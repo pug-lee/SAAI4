@@ -2,7 +2,7 @@
 
 require("dotenv").config();
 const axios = require("axios");
-const modelConfig = require("./config/modelConfig");
+const modelConfig = require("../config/modelConfig");
 
 // OpenRouter API endpoint
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";

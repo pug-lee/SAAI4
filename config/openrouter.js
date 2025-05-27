@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const config = {
   //apiKey: process.env.OPENROUTER_API_KEY,
-
+  proKey: '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',
   apiKey: {
     1: "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",
     2: "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",
