@@ -34,7 +34,7 @@ const config = {
   },
   headers: {
     'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3000',
-    'X-Title': process.env.APP_TITLE || 'AI Comparison Platform'
+    'X-Title': process.env.APP_TITLE || 'Something About AI'
   }
 };
 
