@@ -3,7 +3,7 @@ module.exports = {
   baseURL: 'https://openrouter.ai/api/v1/chat/completions',
   models: {
     deepseek: 'deepseek/deepseek-chat-v3-0324:free',
-    gemini: 'google/gemini-2.0-flash-exp:free',
+    nvidia: 'nvidia/llama-3.3-nemotron-super-49b-v1:free',
     llama: 'meta-llama/llama-4-maverick:free'
   },
   headers: {
