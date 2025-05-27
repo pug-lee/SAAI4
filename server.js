@@ -25,6 +25,10 @@ const appConfig = require('./config/app');
 
 const app = express();
 
+const randomInt = Math.floor(Math.random() * 20) + 1;
+let randomInt2 = Math.floor(Math.random() * 20) + 1;
+const randomInt3 = Math.floor(Math.random() * 20) + 1;
+
 // PostgreSQL connection with proper SSL handling for Render
 const poolConfig = {
   connectionString: dbConfig.connectionString
@@ -309,10 +313,10 @@ app.post('/profile', requireAuth, async (req, res) => {
 
 app.post('/query', queryLimiter, async (req, res) => {
   const { query } = req.body;
-  
+
   try {
     // Check if API key exists
-    if (!openrouterConfig.apiKey) {
+    if (!openrouterConfig.apiKey[randomInt]) {
       console.error('OpenRouter API key is missing!');
       return res.status(500).json({ 
         success: false, 
@@ -326,7 +330,10 @@ app.post('/query', queryLimiter, async (req, res) => {
     
     for (const model of models) {
       console.log(`Calling ${model} model...`);
-      
+      randomInt2 = Math.floor(Math.random() * 20) + 1;
+      console.log('Key number 2:', randomInt2);
+      console.log('Key: ',openrouterConfig.apiKey[randomInt2]);
+
       const response = await axios.post(
         openrouterConfig.baseURL,
         {
@@ -335,7 +342,7 @@ app.post('/query', queryLimiter, async (req, res) => {
         },
         {
           headers: {
-            'Authorization': `Bearer ${openrouterConfig.apiKey}`,
+            'Authorization': `Bearer ${openrouterConfig.apiKey[randomInt2]}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': openrouterConfig.headers['HTTP-Referer'],
             'X-Title': openrouterConfig.headers['X-Title']
@@ -347,6 +354,9 @@ app.post('/query', queryLimiter, async (req, res) => {
     }
     
     // Compare responses using Llama
+    console.log('Key number 3:', randomInt3);
+    console.log('Key: ',openrouterConfig.apiKey[randomInt3]);
+    
     const comparisonPrompt = `Compare these three AI responses and highlight the key differences:
     
     Gemini: ${responses.gemini}
@@ -357,7 +367,7 @@ app.post('/query', queryLimiter, async (req, res) => {
     
     Please provide a semantic comparison highlighting the main differences in approach, content, and style.`;
     
-    console.log('Calling Llama for comparison...');
+    console.log('Calling Gemma for comparison...');
     
     const comparisonResponse = await axios.post(
       openrouterConfig.baseURL,
@@ -367,7 +377,7 @@ app.post('/query', queryLimiter, async (req, res) => {
       },
       {
         headers: {
-          'Authorization': `Bearer ${openrouterConfig.apiKey}`,
+          'Authorization': `Bearer ${openrouterConfig.apiKey[randomInt3]}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': openrouterConfig.headers['HTTP-Referer'],
           'X-Title': openrouterConfig.headers['X-Title']
@@ -423,6 +433,36 @@ app.post('/query', queryLimiter, async (req, res) => {
     });
   }
 });
+
+app.get('/query/:id', async (req, res) => {
+  // Check if user is authenticated
+  console.log('Retrieving past queries ', req.session.userId);
+  if (!req.session.userId) {
+    return res.status(401).json({ success: false, error: 'Authentication required' });
+  }
+  
+  const queryId = req.params.id;
+  
+  try {
+    const result = await pool.query(
+      'SELECT * FROM queries WHERE id = $1 AND user_id = $2',
+      [queryId, req.session.userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Query not found' });
+    }
+    
+    res.json({
+      success: true,
+      query: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error fetching query:', error);
+    res.status(500).json({ success: false, error: 'An error occurred' });
+  }
+});
+
 
 app.get('/instructions', (req, res) => {
   res.render('instructions');

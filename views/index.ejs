@@ -18,81 +18,250 @@
 
 <div class="query-history">
   <h2>Your Recent Queries</h2>
-  <% if (queries.length > 0) { %>
-    <% queries.forEach(query => { %>
-      <div class="query-item" onclick="showQueryDetails('<%= query.id %>')">
-        <strong><%= query.query_text.substring(0, 100) %>...</strong>
-        <div style="font-size: 0.9rem; color: #7f8c8d; margin-top: 5px;">
-          <%= new Date(query.created_at).toLocaleDateString() %>
+  <% if (isAuthenticated) { %>
+    <% if (queries.length > 0) { %>
+      <% queries.forEach(query => { %>
+        <div class="query-item" data-query-id="<%= query.id %>">
+          <strong><%= query.query_text.substring(0, 100) %>...</strong>
+          <div style="font-size: 0.9rem; color: #7f8c8d; margin-top: 5px;">
+            <%= new Date(query.created_at).toLocaleDateString() %>
+          </div>
         </div>
-      </div>
-    <% }) %>
+      <% }) %>
+    <% } else { %>
+      <p>No queries yet. Submit your first query above!</p>
+    <% } %>
   <% } else { %>
-    <p>No queries yet. Submit your first query above!</p>
+    <div class="art-deco-border" style="background-color: #ffeaa7; text-align: center;">
+      <h3 style="color: var(--primary-color); margin-bottom: 15px;">Save Your Query History</h3>
+      <p style="margin-bottom: 20px;">Log in to save your queries and access them anytime!</p>
+      <a href="/login" style="display: inline-block; margin-right: 10px;">
+        <button type="button">Login</button>
+      </a>
+      <a href="/signup" style="display: inline-block;">
+        <button type="button" style="background-color: var(--secondary-color);">Sign Up</button>
+      </a>
+    </div>
   <% } %>
 </div>
 
 <script>
-document.getElementById('queryForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', function() {
+  // Store queries data for quick access
+  const queriesData = {};
   
-  const query = document.getElementById('query').value;
-  const loading = document.getElementById('loading');
-  const results = document.getElementById('results');
-  
-  loading.classList.add('active');
-  results.innerHTML = '';
-  
-  try {
-    const response = await fetch('/query', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query })
-    });
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      results.innerHTML = `
-        <div class="response-card">
-          <h3>Gemini Response</h3>
-          <p>${data.responses.gemini}</p>
-        </div>
-        
-        <div class="response-card">
-          <h3>Llama Response</h3>
-          <p>${data.responses.llama}</p>
-        </div>
-        
-        <div class="response-card">
-          <h3>Deepseek Response</h3>
-          <p>${data.responses.deepseek}</p>
-        </div>
-        
-        <div class="comparison-section">
-          <h3>Semantic Comparison</h3>
-          <p>${data.comparison}</p>
-        </div>
-      `;
-      
-      // Reload page to show new query in history
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000);
-    } else {
-      results.innerHTML = '<div class="error-message">An error occurred. Please try again.</div>';
-    }
-  } catch (error) {
-    results.innerHTML = '<div class="error-message">An error occurred. Please try again.</div>';
-  } finally {
-    loading.classList.remove('active');
-  }
-});
+  <% if (isAuthenticated && queries.length > 0) { %>
+    <% queries.forEach(query => { %>
+      try {
+        queriesData[<%= query.id %>] = {
+          id: <%= query.id %>,
+          query_text: <%- JSON.stringify(query.query_text || '') %>,
+          gemini_response: <%- JSON.stringify(query.gemini_response || '') %>,
+          llama_response: <%- JSON.stringify(query.llama_response || '') %>,
+          deepseek_response: <%- JSON.stringify(query.deepseek_response || '') %>,
+          comparison_result: <%- JSON.stringify(query.comparison_result || '') %>,
+          created_at: <%- JSON.stringify(query.created_at || '') %>
+        };
+      } catch (e) {
+        console.error('Error loading query <%= query.id %>', e);
+      }
+    <% }) %>
+  <% } %>
 
-function showQueryDetails(queryId) {
-  // Implement query details view if needed
-  console.log('Show query details for ID:', queryId);
-}
+  // Define the escapeHtml function
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Define the displayResults function
+  function displayResults(data) {
+    const results = document.getElementById('results');
+    
+    // Create the HTML content
+    let html = '';
+    
+    if (!data.is_new) {
+      const queryText = escapeHtml(data.query_text);
+      const createdAt = data.created_at ? new Date(data.created_at).toLocaleString() : '';
+      
+      html += '<div class="art-deco-border" style="background-color: #e8f4fd; margin-bottom: 20px;">';
+      html += '<h3 style="color: var(--primary-color); margin-bottom: 10px;">Viewing Saved Query</h3>';
+      html += '<p style="margin-bottom: 10px;"><strong>Original Query:</strong> ' + queryText + '</p>';
+      if (createdAt) {
+        html += '<p style="font-size: 0.9rem; color: #7f8c8d;">Asked on: ' + createdAt + '</p>';
+      }
+      html += '</div>';
+    }
+    
+    html += '<div class="response-card">';
+    html += '<h3>Gemini Response</h3>';
+    html += '<div>' + (data.gemini_response ? escapeHtml(data.gemini_response) : '<em>No response available</em>') + '</div>';
+    html += '</div>';
+    
+    html += '<div class="response-card">';
+    html += '<h3>Llama Response</h3>';
+    html += '<div>' + (data.llama_response ? escapeHtml(data.llama_response) : '<em>No response available</em>') + '</div>';
+    html += '</div>';
+    
+    html += '<div class="response-card">';
+    html += '<h3>Deepseek Response</h3>';
+    html += '<div>' + (data.deepseek_response ? escapeHtml(data.deepseek_response) : '<em>No response available</em>') + '</div>';
+    html += '</div>';
+    
+    html += '<div class="comparison-section">';
+    html += '<h3>Semantic Comparison</h3>';
+    html += '<div>' + (data.comparison_result ? escapeHtml(data.comparison_result) : '<em>No comparison available</em>') + '</div>';
+    html += '</div>';
+    
+    results.innerHTML = html;
+    
+    // Scroll to results
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Define the fetchQueryDetails function
+  async function fetchQueryDetails(queryId) {
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    
+    loading.classList.add('active');
+    
+    try {
+      const response = await fetch('/query/' + queryId);
+      const data = await response.json();
+      
+      console.log('Fetched query data:', data);
+      
+      if (data.success) {
+        displayResults({
+          query_text: data.query.query_text,
+          gemini_response: data.query.gemini_response,
+          llama_response: data.query.llama_response,
+          deepseek_response: data.query.deepseek_response,
+          comparison_result: data.query.comparison_result,
+          created_at: data.query.created_at,
+          is_new: false
+        });
+        
+        // Highlight the selected query
+        document.querySelectorAll('.query-item').forEach(function(item) {
+          item.classList.remove('selected');
+        });
+        const selectedItem = document.querySelector('[data-query-id="' + queryId + '"]');
+        if (selectedItem) {
+          selectedItem.classList.add('selected');
+        }
+        
+        // Update the query input field
+        document.getElementById('query').value = data.query.query_text || '';
+      } else {
+        results.innerHTML = '<div class="error-message">Could not load query details.</div>';
+      }
+    } catch (error) {
+      console.error('Error fetching query:', error);
+      results.innerHTML = '<div class="error-message">An error occurred while loading the query.</div>';
+    } finally {
+      loading.classList.remove('active');
+    }
+  }
+
+  // Define the loadQueryDetails function
+  function loadQueryDetails(queryId) {
+    console.log('Loading query:', queryId);
+    
+    const queryData = queriesData[queryId];
+    
+    if (queryData) {
+      console.log('Query data found in memory:', queryData);
+      
+      // Display the saved query results
+      displayResults({
+        query_text: queryData.query_text,
+        gemini_response: queryData.gemini_response,
+        llama_response: queryData.llama_response,
+        deepseek_response: queryData.deepseek_response,
+        comparison_result: queryData.comparison_result,
+        created_at: queryData.created_at,
+        is_new: false
+      });
+      
+      // Highlight the selected query
+      document.querySelectorAll('.query-item').forEach(function(item) {
+        item.classList.remove('selected');
+      });
+      const selectedItem = document.querySelector('[data-query-id="' + queryId + '"]');
+      if (selectedItem) {
+        selectedItem.classList.add('selected');
+      }
+      
+      // Update the query input field with the original query
+      document.getElementById('query').value = queryData.query_text || '';
+    } else {
+      console.log('Query data not found in memory, fetching from server...');
+      // If data not in memory, fetch from server
+      fetchQueryDetails(queryId);
+    }
+  }
+
+  // Add click event listeners to all query items
+  document.querySelectorAll('.query-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      const queryId = this.getAttribute('data-query-id');
+      loadQueryDetails(queryId);
+    });
+  });
+
+  // Form submission handler
+  document.getElementById('queryForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const query = document.getElementById('query').value;
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    
+    loading.classList.add('active');
+    results.innerHTML = '';
+    
+    try {
+      const response = await fetch('/query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ query: query })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        displayResults({
+          query_text: query,
+          gemini_response: data.responses.gemini,
+          llama_response: data.responses.llama,
+          deepseek_response: data.responses.deepseek,
+          comparison_result: data.comparison,
+          is_new: true
+        });
+        
+        <% if (isAuthenticated) { %>
+        // Reload page to show new query in history if user is logged in
+        setTimeout(function() {
+          window.location.reload();
+        }, 3000);
+        <% } %>
+      } else {
+        results.innerHTML = '<div class="error-message">' + (data.error || 'An error occurred. Please try again.') + '</div>';
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      results.innerHTML = '<div class="error-message">An error occurred. Please try again.</div>';
+    } finally {
+      loading.classList.remove('active');
+    }
+  });
+});
 </script>

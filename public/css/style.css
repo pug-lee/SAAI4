@@ -217,11 +217,19 @@ button:hover {
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   cursor: pointer;
   transition: all 0.3s ease;
+  border: 2px solid transparent;
 }
 
 .query-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  border-color: var(--accent-color);
+}
+
+.query-item.selected {
+  background-color: #ffeaa7;
+  border-color: var(--accent-color);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
 .error-message {
