@@ -208,6 +208,7 @@ const queryLimiter = rateLimit({
 app.get('/', async (req, res) => {
   try {
     let queries = [];
+    console.log('Landing page:', req.session.user);
     if (req.session.userId) {
       const result = await pool.query(
         'SELECT * FROM queries WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10',
