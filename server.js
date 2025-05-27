@@ -6,10 +6,12 @@ const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const axios = require('axios');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const dbConfig = require('./config/database');
 const openrouterConfig = require('./config/openrouter');
+const appConfig = require('./config/app');
 
 const app = express();
 
@@ -77,12 +79,12 @@ const createTables = async () => {
     
     // Add primary key constraint if it doesn't exist
     await pool.query(`
-      DO $ 
+      DO $$ 
       BEGIN 
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'session_pkey') THEN
           ALTER TABLE "user_sessions" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid");
         END IF;
-      END $;
+      END $$;
     `);
     
     // Create index if it doesn't exist
@@ -139,6 +141,27 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.appTitle = appConfig.title;
   next();
+});
+
+// Rate limiter for API queries
+const queryLimiter = rateLimit({
+  windowMs: appConfig.rateLimit.windowMs,
+  max: appConfig.rateLimit.maxRequests,
+  message: `Too many requests. Please wait ${appConfig.rateLimit.windowMs / 1000} seconds before making another query.`,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+  keyGenerator: (req) => {
+    // Use session ID if logged in, otherwise use IP
+    return req.session?.userId || req.ip;
+  },
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      error: `Too many requests. Please wait ${appConfig.rateLimit.windowMs / 1000} seconds before making another query.`,
+      retryAfter: Math.round(appConfig.rateLimit.windowMs / 1000)
+    });
+  }
 });
 
 // Routes

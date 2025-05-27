@@ -5,5 +5,9 @@ module.exports = {
     gemini: 'google/gemini-2.0-flash-exp:free',
     llama: 'meta-llama/llama-4-maverick:free',
     deepseek: 'deepseek/deepseek-chat-v3-0324:free'
+  },
+  headers: {
+    'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3000',
+    'X-Title': process.env.APP_TITLE || 'AI Comparison Platform'
   }
 };
