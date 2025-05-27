@@ -332,7 +332,7 @@ app.post('/query', queryLimiter, async (req, res) => {
         },
         {
           headers: {
-            'Authorization': 'Bearer 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',
+            'Authorization': `Bearer ${openrouterConfig.apiKey}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': openrouterConfig.headers['HTTP-Referer'],
             'X-Title': openrouterConfig.headers['X-Title']
