@@ -362,7 +362,7 @@ app.post('/query', queryLimiter, async (req, res) => {
     const comparisonResponse = await axios.post(
       openrouterConfig.baseURL,
       {
-        model: openrouterConfig.models.gemma,
+        model: openrouterConfig.models.llama,
         messages: [{ role: 'user', content: comparisonPrompt }]
       },
       {
@@ -384,13 +384,12 @@ app.post('/query', queryLimiter, async (req, res) => {
         [req.session.userId, query, responses.gemini, responses.llama, responses.deepseek, comparison]
       );
     }
-    console.log('Sending results back to browser:');
+    
     res.json({
       success: true,
       responses,
       comparison
     });
-    console.log('done');
   } catch (error) {
     console.error('API Error:', error.response?.data || error.message);
     console.error('Full error:', error.response?.status, error.response?.statusText);
