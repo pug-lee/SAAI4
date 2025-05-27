@@ -23,6 +23,7 @@ const openrouterConfig = require('./config/openrouter');
 const appConfig = require('./config/app');
 
 const app = express();
+app.set('trust proxy', 1);
 
 //generate new API_KEY for every call
 const proKey = openrouterConfig.proKey;
@@ -163,8 +164,10 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-    httpOnly: true
+    //secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    //httpOnly: true
+    secure: true, 
+    sameSite: "none"
   }
 }));
 
