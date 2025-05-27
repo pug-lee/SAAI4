@@ -272,6 +272,7 @@ app.post('/login', async (req, res) => {
       return res.render('login', { error: 'Invalid email or password' });
     }
     
+    console.log('User logged in and ID is:', user.id);
     req.session.userId = user.id;
     req.session.user = {
       id: user.id,
