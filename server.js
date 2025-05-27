@@ -167,6 +167,7 @@ app.use(session({
     //secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
     //httpOnly: true
     secure: true, 
+    proxy: true,
     sameSite: "none"
   }
 }));
