@@ -1,6 +1,13 @@
 require('dotenv').config();
 
-module.exports = {
+/*module.exports = {
   connectionString: process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/ai_comparison',
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+};*/
+
+module.exports = {
+  connectionString: process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/ai_comparison',
+  ssl: process.env.DATABASE_URL ? {
+    rejectUnauthorized: false
+  } : false
 };

@@ -6,98 +6,11 @@ const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const axios = require('axios');
-require('dotenv').config();
-
 const dbConfig = require('./config/database');
 const openrouterConfig = require('./config/openrouter');
 
 const app = express();
-
-// PostgreSQL connection with proper SSL handling for Render
-const poolConfig = {
-  connectionString: dbConfig.connectionString
-};
-
-// Only add SSL config if we have a DATABASE_URL (production)
-if (process.env.DATABASE_URL) {
-  poolConfig.ssl = {
-    rejectUnauthorized: false
-  };
-}
-
-const pool = new Pool(poolConfig);
-
-// Test database connection
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('Error connecting to the database:', err.stack);
-  } else {
-    console.log('Successfully connected to PostgreSQL database');
-    release();
-  }
-});
-
-// Create tables if they don't exist
-const createTables = async () => {
-  try {
-    // Users table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Queries table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS queries (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id),
-        query_text TEXT NOT NULL,
-        gemini_response TEXT,
-        llama_response TEXT,
-        deepseek_response TEXT,
-        comparison_result TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Session table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS "user_sessions" (
-        "sid" varchar NOT NULL COLLATE "default",
-        "sess" json NOT NULL,
-        "expire" timestamp(6) NOT NULL
-      )
-    `);
-    
-    // Add primary key constraint if it doesn't exist
-    await pool.query(`
-      DO $ 
-      BEGIN 
-        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'session_pkey') THEN
-          ALTER TABLE "user_sessions" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid");
-        END IF;
-      END $;
-    `);
-    
-    // Create index if it doesn't exist
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "user_sessions" ("expire");
-    `);
-
-    console.log('Database tables created/verified successfully');
-  } catch (error) {
-    console.error('Error creating tables:', error);
-  }
-};
-
-// Initialize tables
-createTables();
+const pool = new Pool({ connectionString: dbConfig.connectionString, ssl: dbConfig.ssl });
 
 // View engine setup
 app.set('view engine', 'ejs');
@@ -113,16 +26,13 @@ app.use(express.json());
 app.use(session({
   store: new pgSession({
     pool: pool,
-    tableName: 'user_sessions',
-    createTableIfMissing: true
+    tableName: 'user_sessions'
   }),
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-    httpOnly: true
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   }
 }));
 
@@ -134,28 +44,23 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-// Middleware to pass user info and app config to views
+// Middleware to pass user info to views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
-  res.locals.appTitle = appConfig.title;
   next();
 });
 
 // Routes
-app.get('/', async (req, res) => {
+app.get('/', requireAuth, async (req, res) => {
   try {
-    let queries = [];
-    if (req.session.userId) {
-      const result = await pool.query(
-        'SELECT * FROM queries WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10',
-        [req.session.userId]
-      );
-      queries = result.rows;
-    }
-    res.render('index', { queries, isAuthenticated: !!req.session.userId });
+    const result = await pool.query(
+      'SELECT * FROM queries WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10',
+      [req.session.userId]
+    );
+    res.render('index', { queries: result.rows });
   } catch (error) {
     console.error(error);
-    res.render('index', { queries: [], isAuthenticated: !!req.session.userId });
+    res.render('index', { queries: [] });
   }
 });
 
@@ -274,7 +179,7 @@ app.post('/profile', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/query', queryLimiter, async (req, res) => {
+app.post('/query', requireAuth, async (req, res) => {
   const { query } = req.body;
   
   try {
@@ -292,9 +197,7 @@ app.post('/query', queryLimiter, async (req, res) => {
         {
           headers: {
             'Authorization': `Bearer ${openrouterConfig.apiKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': openrouterConfig.headers['HTTP-Referer'],
-            'X-Title': openrouterConfig.headers['X-Title']
+            'Content-Type': 'application/json'
           }
         }
       );
@@ -322,22 +225,18 @@ app.post('/query', queryLimiter, async (req, res) => {
       {
         headers: {
           'Authorization': `Bearer ${openrouterConfig.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': openrouterConfig.headers['HTTP-Referer'],
-          'X-Title': openrouterConfig.headers['X-Title']
+          'Content-Type': 'application/json'
         }
       }
     );
     
     const comparison = comparisonResponse.data.choices[0].message.content;
     
-    // Save to database only if user is logged in
-    if (req.session.userId) {
-      await pool.query(
-        'INSERT INTO queries (user_id, query_text, gemini_response, llama_response, deepseek_response, comparison_result) VALUES ($1, $2, $3, $4, $5, $6)',
-        [req.session.userId, query, responses.gemini, responses.llama, responses.deepseek, comparison]
-      );
-    }
+    // Save to database
+    await pool.query(
+      'INSERT INTO queries (user_id, query_text, gemini_response, llama_response, deepseek_response, comparison_result) VALUES ($1, $2, $3, $4, $5, $6)',
+      [req.session.userId, query, responses.gemini, responses.llama, responses.deepseek, comparison]
+    );
     
     res.json({
       success: true,
@@ -345,20 +244,8 @@ app.post('/query', queryLimiter, async (req, res) => {
       comparison
     });
   } catch (error) {
-    console.error('API Error:', error.response?.data || error.message);
-    
-    // Check if it's a rate limit error from OpenRouter
-    if (error.response?.status === 429) {
-      return res.status(429).json({ 
-        success: false, 
-        error: 'OpenRouter API rate limit exceeded. Please try again later.' 
-      });
-    }
-    
-    res.status(500).json({ 
-      success: false, 
-      error: 'An error occurred while processing your request.' 
-    });
+    console.error(error);
+    res.json({ success: false, error: 'An error occurred' });
   }
 });
 

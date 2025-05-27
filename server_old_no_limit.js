@@ -134,10 +134,9 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-// Middleware to pass user info and app config to views
+// Middleware to pass user info to views
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
-  res.locals.appTitle = appConfig.title;
   next();
 });
 
@@ -274,7 +273,7 @@ app.post('/profile', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/query', queryLimiter, async (req, res) => {
+app.post('/query', async (req, res) => {
   const { query } = req.body;
   
   try {
@@ -292,9 +291,7 @@ app.post('/query', queryLimiter, async (req, res) => {
         {
           headers: {
             'Authorization': `Bearer ${openrouterConfig.apiKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': openrouterConfig.headers['HTTP-Referer'],
-            'X-Title': openrouterConfig.headers['X-Title']
+            'Content-Type': 'application/json'
           }
         }
       );
@@ -322,9 +319,7 @@ app.post('/query', queryLimiter, async (req, res) => {
       {
         headers: {
           'Authorization': `Bearer ${openrouterConfig.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': openrouterConfig.headers['HTTP-Referer'],
-          'X-Title': openrouterConfig.headers['X-Title']
+          'Content-Type': 'application/json'
         }
       }
     );
@@ -345,20 +340,8 @@ app.post('/query', queryLimiter, async (req, res) => {
       comparison
     });
   } catch (error) {
-    console.error('API Error:', error.response?.data || error.message);
-    
-    // Check if it's a rate limit error from OpenRouter
-    if (error.response?.status === 429) {
-      return res.status(429).json({ 
-        success: false, 
-        error: 'OpenRouter API rate limit exceeded. Please try again later.' 
-      });
-    }
-    
-    res.status(500).json({ 
-      success: false, 
-      error: 'An error occurred while processing your request.' 
-    });
+    console.error(error);
+    res.json({ success: false, error: 'An error occurred' });
   }
 });
 
