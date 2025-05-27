@@ -158,7 +158,7 @@ app.use(session({
     tableName: 'user_sessions',
     createTableIfMissing: true
   }),
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: process.env.SESSION_SECRET || 'thereisreallysomethingaboutAI2025',
   resave: false,
   saveUninitialized: false,
   cookie: {
