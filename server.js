@@ -280,7 +280,7 @@ app.post('/login', async (req, res) => {
       firstName: user.first_name,
       lastName: user.last_name
     };
-    
+    console.log('Created session:', req.session.user);
     res.redirect('/');
   } catch (error) {
     console.error(error);
