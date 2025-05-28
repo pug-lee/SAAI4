@@ -99,22 +99,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     html += '<div class="response-card">';
     html += '<h3>Gemini Response</h3>';
-    html += '<div>' + (data.gemini_response ? escapeHtml(data.gemini_response) : '<em>No response available</em>') + '</div>';
+    //html += '<div>' + (data.gemini_response ? escapeHtml(data.gemini_response) : '<em>No response available</em>') + '</div>';
+    html += '<div>' + (data.gemini_response ? data.gemini_response : '<em>No response available</em>') + '</div>';
     html += '</div>';
     
     html += '<div class="response-card">';
     html += '<h3>Llama Response</h3>';
-    html += '<div>' + (data.llama_response ? escapeHtml(data.llama_response) : '<em>No response available</em>') + '</div>';
+    html += '<div>' + (data.llama_response ? data.llama_response : '<em>No response available</em>') + '</div>';
     html += '</div>';
     
     html += '<div class="response-card">';
     html += '<h3>Deepseek Response</h3>';
-    html += '<div>' + (data.deepseek_response ? escapeHtml(data.deepseek_response) : '<em>No response available</em>') + '</div>';
+    html += '<div>' + (data.deepseek_response ? data.deepseek_response : '<em>No response available</em>') + '</div>';
     html += '</div>';
     
     html += '<div class="comparison-section">';
     html += '<h3>Semantic Comparison</h3>';
-    html += '<div>' + (data.comparison_result ? escapeHtml(data.comparison_result) : '<em>No comparison available</em>') + '</div>';
+    html += '<div>' + (data.comparison_result ? data.comparison_result : '<em>No comparison available</em>') + '</div>';
     html += '</div>';
     
     results.innerHTML = html;
@@ -163,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } catch (error) {
       console.error('Error fetching query:', error);
-      results.innerHTML = '<div class="error-message">An error occurred while loading the query.</div>';
+      results.innerHTML = '<div class="error-message">Please <a href="#"> onclick="location.reload()">reload</a> the page for the results. <button onclick="location.reload()">Reload Page</button></div>';
     } finally {
       loading.classList.remove('active');
     }
@@ -254,11 +255,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
         <% } %>
       } else {
-        results.innerHTML = '<div class="error-message">' + (data.error || 'An error occurred. Please try again.') + '</div>';
+        results.innerHTML = '<div class="error-message">' + (data.error || 'Please reload the page for the results.') + '</div>';
+        window.location.reload();
       }
     } catch (error) {
       console.error('Error:', error);
-      results.innerHTML = '<div class="error-message">An error occurred. Please try again.</div>';
+      results.innerHTML = '<div class="error-message">Please reload the page for results.</div>';
+      window.location.reload();
     } finally {
       loading.classList.remove('active');
     }

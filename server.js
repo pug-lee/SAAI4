@@ -345,7 +345,7 @@ app.post('/profile', requireAuth, async (req, res) => {
 
 app.post('/query', queryLimiter, async (req, res) => {
   const { query } = req.body;
-  const enhancePrompt = 'Explain in simple, clear language as if you are teaching someone with no prior knowledge. Break the explanation into sections with headings. Use analogies and examples to make complex ideas easy to understand. Format it like a web article with short paragraphs and bullet points. ';
+  const enhancePrompt = 'Explain in simple, clear language as if you are teaching someone with no prior knowledge. Break the explanation into sections with headings. Use analogies and examples to make complex ideas easy to understand. Format it like a web article with short paragraphs, bullet points, line breaks and paragraph breaks using HTML. ';
   let new_query = enhancePrompt + query;
   
   try {
@@ -395,7 +395,7 @@ app.post('/query', queryLimiter, async (req, res) => {
     
     Deepseek: ${responses.deepseek}
     
-    Please provide a semantic comparison highlighting the main differences in approach, content, and style. The result should be for a general audience. Make it engaging, informative, and easy to read. Use headings, subheadings, short paragraphs, and bullet points. The tone should be friendly and professional, suitable for a website. End with a call-to-action inviting readers to share the article.`;
+    Please provide a semantic comparison highlighting the main differences in approach, content, and style. The result should be for a general audience. Make it engaging, informative, and easy to read. Use headings, subheadings, short paragraphs, bullet points, line breaks and paragraph breaks using HTML. The tone should be friendly and professional, suitable for a website. End with a call-to-action inviting readers to share the article.`;
     
     console.log('Calling Gemma for comparison...');
     tempAPI_Key = await generateApiKey();
@@ -460,7 +460,7 @@ app.post('/query', queryLimiter, async (req, res) => {
     
     res.status(500).json({ 
       success: false, 
-      error: 'An error occurred while processing your request.' 
+      error: 'Please refresh the page for the results.' 
     });
   }
 });
