@@ -239,6 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const data = await response.json();
       
       if (data.success) {
+        console.log('Success responses');
         displayResults({
           query_text: query,
           gemini_response: data.responses.gemini,
@@ -255,6 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 30000);
         <% } %>
       } else {
+        console.error('Error:', data.error);
         results.innerHTML = '<div class="error-message">' + (data.error || 'Please reload the page for the results.') + '</div>';
         window.location.reload();
       }
