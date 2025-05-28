@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reload page to show new query in history if user is logged in
         setTimeout(function() {
           window.location.reload();
-        }, 3000);
+        }, 30000);
         <% } %>
       } else {
         results.innerHTML = '<div class="error-message">' + (data.error || 'Please reload the page for the results.') + '</div>';
