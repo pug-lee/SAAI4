@@ -251,9 +251,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         <% if (isAuthenticated) { %>
         // Reload page to show new query in history if user is logged in
-        setTimeout(function() {
+        /*setTimeout(function() {
           window.location.reload();
-        }, 30000);
+        }, 30000); */
         <% } %>
       } else {
         console.error('Error:', data.error);
