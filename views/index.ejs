@@ -2,7 +2,7 @@
   <h2>Submit Your Query</h2>
   <form id="queryForm">
     <div class="form-group">
-      <label for="query">Enter your question for the AI models (Gemini, Llama and Deepseek): </label>
+      <label for="query">Enter your question for the AI models (Gemini, Llama and Qwen): </label>
       <textarea id="query" name="query" rows="4" required></textarea>
     </div>
     <button type="submit">Compare Responses</button>
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
     html += '</div>';
     
     html += '<div class="response-card">';
-    html += '<h3>Deepseek Response</h3>';
+    html += '<h3>Qwen Response</h3>';
     html += '<div>' + (data.deepseek_response ? data.deepseek_response : '<em>No response available</em>') + '</div>';
     html += '</div>';
     

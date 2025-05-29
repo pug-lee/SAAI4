@@ -1,7 +1,6 @@
 require('dotenv').config();
 
 const config = {
-  //apiKey: process.env.OPENROUTER_API_KEY,
   proKey: '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',
   apiKey: {
     1: "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",
@@ -28,8 +27,9 @@ const config = {
   baseURL: 'https://openrouter.ai/api/v1/chat/completions',
   models: {
     gemini: 'nvidia/llama-3.3-nemotron-super-49b-v1:free',
-    llama: 'meta-llama/llama-4-maverick:free',
-    deepseek: 'deepseek/deepseek-chat-v3-0324:free',
+    llama: 'meta-llama/llama-4-scout:free',
+    deepseek: 'qwen/qwen3-8b:free',
+    qwen: 'deepseek/deepseek-chat-v3-0324:free',
     gemma: 'google/gemma-3n-e4b-it:free'
   },
   headers: {

@@ -345,7 +345,7 @@ app.post('/profile', requireAuth, async (req, res) => {
 
 app.post('/query', queryLimiter, async (req, res) => {
   const { query } = req.body;
-  const enhancePrompt = 'Explain in simple, short and clear language as if you are teaching someone with no prior knowledge. Break the explanation into sections with HTML headings. Use analogies and examples to make complex ideas easy to understand. Format it like a web article with short paragraphs, bullet points, line breaks and paragraph breaks using HTML. ';
+  const enhancePrompt = 'Explain in simple, clear language as if you are teaching someone with no prior knowledge. Break the explanation into sections with headings. Use analogies and examples to make complex ideas easy to understand. Format it like a web article with short paragraphs, bullet points, line breaks and paragraph breaks using HTML. ';
   let new_query = enhancePrompt + query;
   
   try {
@@ -367,7 +367,7 @@ app.post('/query', queryLimiter, async (req, res) => {
       tempAPI_Key = await generateApiKey();
       console.log('Gen new API_KEY:', tempAPI_Key);
 
-      let response = await axios.post(
+      const response = await axios.post(
         openrouterConfig.baseURL,
         {
           model: openrouterConfig.models[model],
@@ -383,27 +383,13 @@ app.post('/query', queryLimiter, async (req, res) => {
         }
       );
       
-      /*
       //check for null or no response and send again.
       if (!responses[model]) {
-        response = await axios.post(
-        openrouterConfig.baseURL,
-        {
-          model: openrouterConfig.models[model],
-          messages: [{ role: 'user', content: new_query }]
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${tempAPI_Key}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': openrouterConfig.headers['HTTP-Referer'],
-            'X-Title': openrouterConfig.headers['X-Title']
-          }
-        }
-      );*/
-      
+        
+      };
+
       responses[model] = response.data.choices[0].message.content;
-    };
+    }
     
     // Compare responses using Gemma    
     const comparisonPrompt = `Compare these three AI responses and highlight the key differences:
@@ -412,7 +398,7 @@ app.post('/query', queryLimiter, async (req, res) => {
     
     Llama: ${responses.llama}
     
-    Qwen: ${responses.deepseek}
+    Deepseek: ${responses.deepseek}
     
     Please provide a semantic comparison highlighting the main differences in approach, content, and style. The result should be for a general audience. Make it engaging, informative, and easy to read. Use headings, subheadings, short paragraphs, bullet points, line breaks and paragraph breaks using HTML. The tone should be friendly and professional, suitable for a website. End with a call-to-action inviting readers to share the article.`;
     
